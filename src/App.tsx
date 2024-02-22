@@ -7,32 +7,6 @@ import { LinkOption } from "./types";
 
 const sampleData: LinkOption[] = [
 	{ text: "Google", link: "https://www.google.com" },
-	{ text: "Facebook", link: "https://www.facebook.com" },
-	{ text: "Twitter", link: "https://www.twitter.com" },
-	{ text: "Instagram", link: "https://www.instagram.com" },
-	{ text: "LinkedIn", link: "https://www.linkedin.com" },
-	{ text: "Reddit", link: "https://www.reddit.com" },
-	{ text: "Pinterest", link: "https://www.pinterest.com" },
-	{ text: "TikTok", link: "https://www.tiktok.com" },
-	{ text: "Snapchat", link: "https://www.snapchat.com" },
-	{ text: "WhatsApp", link: "https://www.whatsapp.com" },
-	{ text: "Telegram", link: "https://www.telegram.com" },
-	{ text: "Signal", link: "https://www.signal.com" },
-	{ text: "Skype", link: "https://www.skype.com" },
-	{ text: "Zoom", link: "https://www.zoom.com" },
-	{ text: "Slack", link: "https://www.slack.com" },
-	{ text: "Discord", link: "https://www.discord.com" },
-	{ text: "Twitch", link: "https://www.twitch.com" },
-	{ text: "YouTube", link: "https://www.youtube.com" },
-	{ text: "Vimeo", link: "https://www.vimeo.com" },
-	{ text: "Spotify", link: "https://www.spotify.com" },
-	{ text: "Apple Music", link: "https://www.apple.com" },
-	{ text: "SoundCloud", link: "https://www.soundcloud.com" },
-	{ text: "Bandcamp", link: "https://www.bandcamp.com" },
-	{ text: "Tidal", link: "https://www.tidal.com" },
-	{ text: "Deezer", link: "https://www.deezer.com" },
-	{ text: "Pandora", link: "https://www.pandora.com" },
-	{ text: "Amazon Music", link: "https://www.amazon.com" },
 ];
 
 function App() {
@@ -58,7 +32,9 @@ function App() {
 		const action = event.data.action;
 		switch (action) {
 			case "openModal":
-				let newLinks: LinkOption[] = event.data.anchors || [];
+				let newLinks: LinkOption[] = event.data.links || [];
+
+				newLinks = addLinkDates(newLinks);
 
 				links.current = newLinks;
 				forceUpdate();
@@ -76,11 +52,56 @@ function App() {
 				if (searchRef.current) {
 					searchRef.current.focus();
 				}
+				setTimeout(() => {
+					if (searchRef.current) {
+						searchRef.current.focus();
+					}
+				}, 100);
 				break;
 			default:
 				break;
 		}
 	};
+
+	function saveLink(link: LinkOption) {
+		const savedLinks = localStorage.getItem("savedLinks");
+		const linkMap = savedLinks ? JSON.parse(savedLinks) : {};
+		let linkCopy = { ...link };
+		linkCopy.lastVisited = new Date();
+		// remove the attributes from the link
+		delete linkCopy.attributes;
+		linkMap[linkCopy.link] = linkCopy;
+
+		// go through all the links and remove the one's that are older than 30 days
+		const currentDate = new Date();
+		for (const key in linkMap) {
+			if (Object.prototype.hasOwnProperty.call(linkMap, key)) {
+				const link = linkMap[key];
+				const lastVisited = new Date(link.lastVisited);
+				const diffTime = Math.abs(
+					currentDate.getTime() - lastVisited.getTime()
+				);
+				const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+				if (diffDays > 30) {
+					delete linkMap[key];
+				}
+			}
+		}
+
+		// save the links to local storage
+		localStorage.setItem("savedLinks", JSON.stringify(linkMap));
+	}
+
+	function addLinkDates(links: LinkOption[]) {
+		const savedLinks = localStorage.getItem("savedLinks");
+		const linkMap = savedLinks ? JSON.parse(savedLinks) : {};
+		for (const link of links) {
+			if (linkMap[link.link]) {
+				link.lastVisited = new Date(linkMap[link.link].lastVisited);
+			}
+		}
+		return links;
+	}
 
 	function focusNextItem() {
 		setActiveIndex((prevIndex) => prevIndex + 1);
@@ -94,12 +115,15 @@ function App() {
 		window.parent.postMessage({ action: "closeModal" }, "*");
 	}
 
-	function openLink(link: string, newTab: boolean) {
+	function openLink(link: LinkOption, newTab: boolean) {
+		// save the link to local storage
+		saveLink(link);
+
 		if (newTab) {
-			window.open(link, "_blank");
+			window.open(link.link, "_blank");
 		} else {
 			// send the message to the parent to open the link
-			window.parent.postMessage({ action: "openLink", link }, "*");
+			window.parent.postMessage({ action: "openLink", link: link }, "*");
 		}
 	}
 
@@ -126,6 +150,18 @@ function App() {
 		filteredLinks = fuzzySearcher.current.search(searchValue);
 	}
 
+	function compareDates(a: Date | undefined, b: Date | undefined) {
+		if (!a) a = new Date(0);
+		if (!b) b = new Date(0);
+
+		return b.getTime() - a.getTime();
+	}
+
+	// sort the links by lastVisited
+	filteredLinks.sort((a, b) => {
+		return compareDates(a.lastVisited, b.lastVisited);
+	});
+
 	const activeIndexClamped =
 		(activeIndex + filteredLinks.length) % filteredLinks.length;
 
@@ -150,9 +186,9 @@ function App() {
 									// if command is pressed, open the link in a new tab
 									// else open the link in the same tab
 									if (e.metaKey) {
-										openLink(filteredLinks[activeIndex].link, true);
+										openLink(filteredLinks[activeIndex], true);
 									} else {
-										openLink(filteredLinks[activeIndex].link, false);
+										openLink(filteredLinks[activeIndex], false);
 									}
 								} else {
 									// close the modal

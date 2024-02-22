@@ -3,7 +3,7 @@
 	"name": "Link Switch",
 	"version": "1.0",
 	"description": "Switch between links on a page with ease.",
-	"permissions": ["activeTab", "scripting"],
+	"permissions": ["activeTab", "scripting", "storage"],
 	"background": {
 		"service_worker": "background.js"
 	},

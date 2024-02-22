@@ -53,6 +53,8 @@ function mountSwitcherModal() {
 mountSwitcherModal();
 
 function showSwitcherModal() {
+	if (modalIsOpen) return;
+
 	// Save the currently focused element
 	originalFocus = document.activeElement;
 
@@ -85,21 +87,188 @@ function openModal() {
 	const modal = getModal();
 
 	if (!modal) return;
-	// if (modalIsOpen) return;
 
-	// use postMessage to communicate with the iframe
-	// send the iframe a list of anchors on the page
-	// and their hrefs
+	// Find all the anchor tags in the page
 	const anchors = Array.from(document.querySelectorAll("a"));
-	const anchorData = anchors.map((a) => ({
-		link: a.href,
-		text: a.innerText,
-	}));
+	let anchorData = anchors.map((a) => {
+		let serializedAttributes = null;
+
+		if (!a.href) {
+			// extract all the attributes from the anchor
+			let attributes = Array.from(a.attributes).map((attr) => {
+				return {
+					name: attr.name,
+					value: attr.value,
+				};
+			});
+			// serialize the attributes to a string
+			serializedAttributes = JSON.stringify(attributes);
+		}
+
+		return {
+			type: "anchor",
+			link: a.href,
+			text: a.innerText,
+			attributes: serializedAttributes,
+		};
+	});
+
+	// combine all the duplicate links by concatenating their text
+	let linkMap = new Map();
+	anchorData.forEach((a) => {
+		if (linkMap.has(a.link)) {
+			let existingLink = linkMap.get(a.link);
+			// if the new text is already in the existing text, don't add it
+			if (!existingLink.text.includes(a.text)) {
+				existingLink.text += " " + a.text;
+			}
+		} else {
+			linkMap.set(a.link, a);
+		}
+	});
+	anchorData = Array.from(linkMap.values());
+
+	// Find all the buttons in the page
+	const buttons = Array.from(document.querySelectorAll("button"));
+	const buttonData = buttons.map((b) => {
+		let serializedAttributes = null;
+		let attributes = Array.from(b.attributes).map((attr) => {
+			return {
+				name: attr.name,
+				value: attr.value,
+			};
+		});
+		serializedAttributes = JSON.stringify(attributes);
+		let linkObject = {
+			type: "button",
+			text: b.innerText,
+			link: "button",
+			attributes: serializedAttributes,
+		};
+
+		return linkObject;
+	});
+
+	// Find all divs with click event listeners
+	// (look for onclick or onmousedown or role=button or role=link)
+	const divs = Array.from(
+		document.querySelectorAll(
+			"div[onclick], div[onmousedown], div[role='button'], div[role='link'], div[jsaction]"
+		)
+	);
+
+	// let jsactionDivs = Array.from(document.querySelectorAll("div[jsaction]"));
+	// // keep only the ones with jsaction that has a click, mousedown or touchstart event
+	// jsactionDivs.forEach((d) => {
+	// 	let jsaction = d.getAttribute("jsaction");
+	// 	if (
+	// 		jsaction.includes("click") ||
+	// 		jsaction.includes("mousedown") ||
+	// 		jsaction.includes("touchstart")
+	// 	) {
+	// 		divs.push(d);
+	// 	}
+	// });
+
+	const divData = divs.map((d) => {
+		let divText = d.innerText;
+
+		// split the div text by new lines and take the first line
+		if (divText) {
+			divText = divText.split("\n")[0];
+		}
+
+		// recursively find the text of the div inside any of its children
+
+		// let elementStack = [d];
+
+		// while (elementStack.length > 0) {
+		// 	let element = elementStack.pop();
+		// 	if (element.innerText) {
+		// 		divText += " " + element.innerText;
+		// 	} else {
+		// 		for (let i = 0; i < element.children.length; i++) {
+		// 			elementStack.push(element.children[i]);
+		// 		}
+		// 	}
+
+		// 	console.log("ELEMENT STACK: ", elementStack);
+		// 	console.log("DIV TEXT: ", divText);
+
+		// 	if (divText.length > 0) break;
+		// }
+
+		// function findText(node, depth) {
+		// 	if (depth > 3) return;
+		// 	if (node.innerText) {
+		// 		divText += " " + node.innerText;
+		// 		return;
+		// 	} else {
+		// 		for (let i = 0; i < node.children.length; i++) {
+		// 			findText(node.children[i], depth + 1);
+		// 			if (divText.length > 0) break;
+		// 		}
+		// 	}
+		// }
+
+		// findText(d);
+
+		const attributes = Array.from(d.attributes).map((attr) => {
+			return {
+				name: attr.name,
+				value: attr.value,
+			};
+		});
+		serializedAttributes = JSON.stringify(attributes);
+
+		let linkObject = {
+			type: "div",
+			text: divText,
+			link: "clickable div",
+			attributes: serializedAttributes,
+		};
+
+		// console.log(linkObject);
+
+		return linkObject;
+	});
+
+	const inputs = Array.from(
+		document.querySelectorAll(
+			"input[type='text'], input[type='email'], input[type='password'], textarea"
+		)
+	);
+	const inputData = inputs.map((i) => {
+		let serializedAttributes = null;
+		let attributes = Array.from(i.attributes).map((attr) => {
+			return {
+				name: attr.name,
+				value: attr.value,
+			};
+		});
+		serializedAttributes = JSON.stringify(attributes);
+
+		let elementType = i.tagName.toLowerCase();
+
+		return {
+			type: elementType,
+			text: i.placeholder + " " + i.value,
+			link: "focus input",
+			attributes: serializedAttributes,
+		};
+	});
+
+	links = [...anchorData, ...buttonData, ...divData, ...inputData];
+
+	// remove anything that doesn't have a link or text
+	links = links.filter((l) => {
+		return l.link && l.text;
+	});
 
 	modal.contentWindow.postMessage(
 		{
 			action: "openModal",
-			anchors: anchorData,
+			links: links,
 		},
 		"*"
 	);
@@ -133,7 +302,66 @@ window.addEventListener("message", (event) => {
 			break;
 		case "openLink":
 			closeModal();
-			window.location.href = event.data.link;
+
+			let linkOption = event.data.link;
+
+			// console.log("OPENING LINK: ", linkOption);
+
+			if (linkOption.type === "anchor" && linkOption.link) {
+				window.location.href = linkOption.link;
+			} else if (["input", "textarea"].includes(linkOption.type)) {
+				// find the input in the page and focus it
+				let elementType = linkOption.type;
+				const allInputs = Array.from(document.querySelectorAll(elementType));
+				const elem = allInputs.find((i) => {
+					const attributes = JSON.parse(linkOption.attributes);
+					const matches = attributes.every((attr) => {
+						return i.getAttribute(attr.name) === attr.value;
+					});
+
+					// if (matches) console.log("MATCHES: ", linkOption, attributes);
+
+					return matches;
+				});
+
+				if (elem) {
+					elem.focus();
+				}
+			} else {
+				// find the link in the page and click it
+				// use the attributes to find the link
+				let elementType = "";
+				switch (linkOption.type) {
+					case "anchor":
+						elementType = "a";
+						break;
+					case "button":
+						elementType = "button";
+						break;
+					case "div":
+						elementType = "div";
+						break;
+					default:
+						elementType = "a";
+						break;
+				}
+
+				const allAnchors = Array.from(document.querySelectorAll(elementType));
+				const elem = allAnchors.find((a) => {
+					const attributes = JSON.parse(linkOption.attributes);
+					const matches = attributes.every((attr) => {
+						return a.getAttribute(attr.name) === attr.value;
+					});
+
+					// if (matches) console.log("MATCHES: ", linkOption, attributes);
+
+					return matches;
+				});
+
+				if (elem) {
+					elem.click();
+				}
+			}
 			break;
 		default:
 			break;

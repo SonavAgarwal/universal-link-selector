@@ -26,16 +26,28 @@ const SwitcherItem = ({ item, index, activeIndex }: Props) => {
 
 	const active = index === activeIndex;
 
-	return (
-		<div className={cN(styles.item, active && styles.active)} ref={elementRef}>
+	function getTop() {
+		if (!item.text) return null;
+		return (
 			<div className={cN(styles.top)}>
 				<h1 className={cN(styles.text)}>{item.text}</h1>
 			</div>
+		);
+	}
+
+	function getBottom() {
+		if (!item.text) return null;
+		return (
 			<div className={cN(styles.bottom)}>
 				<p className={cN(styles.link)}>{item.link}</p>
 			</div>
-			{/* <p>index: {index}</p>
-			<p>activeIndex: {activeIndex}</p> */}
+		);
+	}
+
+	return (
+		<div className={cN(styles.item, active && styles.active)} ref={elementRef}>
+			{getTop()}
+			{getBottom()}
 		</div>
 	);
 };
