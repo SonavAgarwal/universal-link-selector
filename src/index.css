@@ -1,0 +1,17 @@
+:root {
+	background-color: transparent;
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+
+	/* light colors */
+	--background: #00000030;
+	--foreground: #171717c4;
+	--text: #ffffff;
+	--link: #b9b9b9;
+}
+
+body {
+	background-color: transparent;
+	overscroll-behavior: none;
+	padding: 0;
+	margin: 0;
+}

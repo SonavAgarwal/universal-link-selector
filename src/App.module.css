@@ -1,0 +1,97 @@
+#root {
+	pointer-events: none;
+	background-color: transparent;
+}
+
+.app {
+	width: 100%;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+
+	background-color: transparent;
+}
+
+.modal {
+	max-width: 100%;
+	max-height: 100%;
+	width: 30rem;
+	height: auto;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	background-color: var(--background);
+
+	pointer-events: all;
+	padding: 1rem;
+	border-radius: 1.5rem;
+	gap: 1rem;
+
+	backdrop-filter: blur(1rem) brightness(0.5);
+}
+
+.input {
+	width: 100%;
+	/* height: 4rem; */
+	background-color: var(--foreground);
+	color: var(--text);
+	font-size: 1.5rem;
+	padding: 1rem;
+	box-sizing: border-box;
+	border-radius: 1rem;
+	border: none;
+	outline: none;
+}
+
+.inputContainer {
+	width: 100%;
+	height: 4rem;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	background-color: transparent;
+}
+
+.items {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	/* justify-content: center;
+	align-items: center; */
+	background-color: transparent;
+	gap: 1rem;
+	/* hide scrollbars */
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+
+	max-height: 20rem;
+	overflow-y: scroll;
+}
+
+.noResults {
+	padding: 1rem;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 0.5rem;
+}
+
+.noResultsText {
+	margin: 0;
+	color: var(--text);
+	font-size: 1rem;
+	font-weight: bold;
+	/* text-align: center; */
+}
+
+.noResultsTextSub {
+	margin: 0;
+	color: var(--text);
+	font-size: 0.8rem;
+}
