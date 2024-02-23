@@ -58,14 +58,15 @@ function showSwitcherModal() {
 	// Save the currently focused element
 	originalFocus = document.activeElement;
 
-	modalIsOpen = true;
-
 	const overlay = document.getElementById("switcher-modal-overlay");
 	overlay.style.display = "flex";
 
 	// get the modal iframe and focus it
 	const modal = getModal();
 
+	if (!modal) return;
+
+	modalIsOpen = true;
 	modal.contentWindow.focus();
 	modal.contentWindow.postMessage({ action: "focusInput" }, "*");
 }
@@ -76,7 +77,7 @@ function hideSwitcherModal() {
 	overlay.style.display = "none";
 
 	// Restore the focus to the previously focused element
-	originalFocus.focus();
+	if (originalFocus) originalFocus.focus();
 }
 
 function getModal() {
