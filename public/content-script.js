@@ -325,7 +325,9 @@ window.addEventListener("message", (event) => {
 				});
 
 				if (elem) {
+					elem.scrollIntoView({ behavior: "instant" });
 					elem.focus();
+					// scroll to the input
 				}
 			} else {
 				// find the link in the page and click it
@@ -359,6 +361,8 @@ window.addEventListener("message", (event) => {
 				});
 
 				if (elem) {
+					// scroll to the link
+					elem.scrollIntoView({ behavior: "instant" });
 					elem.click();
 				}
 			}
